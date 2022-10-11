@@ -10,6 +10,11 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import *
 from PIL import ImageTk, Image
+import pandas as pd
+from skimage.restoration import inpaint
+from skimage.transform import resize
+from skimage import color
+from skimage.restoration import denoise_tv_chambolle
 
 def uploadToCartoonify():
     ImagePath=easygui.fileopenbox()
@@ -94,6 +99,22 @@ def save(ReSized6, ImagePath):
     I = "Image saved by name " + newName + " at " + path
     tk.messagebox.showinfo(title=None, message=I)
 
+
+def show_image(image, title='Image', cmap_type='gray'):
+    plt.imshow(image, cmap=cmap_type)
+    plt.title(title)
+    plt.axis('off')
+
+
+def plot_comparison(img_original, img_filtered, img_title_filtered):
+    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(10, 8), sharex=True, sharey=True)
+    ax1.imshow(img_original, cmap=plt.cm.gray)
+    ax1.set_title('Original')
+    ax1.axis('off')
+    ax2.imshow(img_filtered, cmap=plt.cm.gray)
+    ax2.set_title(img_title_filtered)
+    ax2.axis('off')
+
 print("\n----------------------------------")
 print("PIXLAB - An Image Processing Forum")
 print("----------------------------------\n")
@@ -101,20 +122,44 @@ print("1. Restore The Image")
 print("2. Colorize The Image")
 print("3. Cartoonify the Image")
 n = int(input())
+if n == 1:
+    plt.rcParams['figure.figsize'] = (10, 8)
+    print('')
+    print("1. Enhance The Image")
+    print("2. Remove Logos")
+    print("3. Remove Noise")
+    print('')
+    t = int(input())
+    if t == 1:
+        # Enhancing image
+        defect_image = plt.imread('./dataset/damaged_astronaut.png')
+        defect_image = resize(defect_image, (512, 512))
+        defect_image = color.rgba2rgb(defect_image)
+        mask = pd.read_csv('./dataset/astronaut_mask.csv').to_numpy()
+        restored_image = inpaint.inpaint_biharmonic(defect_image, mask, multichannel=True)
+        plot_comparison(defect_image, restored_image, 'Restored image')
 
-if n==2:
-    # top = tk.Tk()
-    # top.geometry('400x400')
-    # top.title('Colorize your Image !')
-    # top.configure(background='white')
-    # label = Label(top, background='#CDCDCD', font=('calibri', 20, 'bold'))
-    # upload = Button(top, text="Colorize an Image", command=uploadToColorize, padx=10, pady=5)
-    # upload.configure(background='#364156', foreground='white', font=('calibri', 10, 'bold'))
-    # upload.pack(side=TOP, pady=50)
-    # top.mainloop()
-    Colorize("G:/Projects/PIXLAB/Colorize/image1.jpg")
+    elif t == 2:
+        # Removing logos
+        image_with_logo = plt.imread('G:/Projects/PIXLAB/Image Restoration/Logo/TEST-2.jpg')
+        mask = np.zeros(image_with_logo.shape[:-1])
+        mask[210:272, 360:425] = 1
+        image_logo_removed = inpaint.inpaint_biharmonic(image_with_logo, mask, multichannel=True)
+        plot_comparison(image_with_logo, image_logo_removed, 'Image with logo removed')
 
-if n==3:
+    elif t == 3:
+        # Reducing Noise
+        noisy_image = plt.imread('./dataset/miny.jpeg')
+        denoised_image = denoise_tv_chambolle(noisy_image, multichannel=True)
+        plot_comparison(noisy_image, denoised_image, 'Denoised Image')
+
+    else:
+        print("ERROR TRY AGAIN")
+
+elif n==2:
+    Colorize("G:/Projects/PIXLAB/Colorize/TEST-3.jpg")
+
+elif n==3:
     top = tk.Tk()
     top.geometry('400x400')
     top.title('Cartoonify your Image !')
